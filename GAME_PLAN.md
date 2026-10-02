@@ -20,8 +20,18 @@ Possession, passing, shooting, goalkeeper saves, tackles, match clock, score, go
 ## 3.1 Next realism pass
 Animation cycles, better dribbling/kicking animations, fouls and free kicks, corners, goal kicks, substitutions and improved goalkeeper diving.
 
-## 4. Career Mode
-Club selection, player attributes, training, transfers, fixtures, league table, progression and save/load.
+## 4. Career Mode — BUILT
+- Career dashboard with club, season, week, budget, rating and energy.
+- Training system that improves squad rating and uses energy.
+- Transfer market with original players and in-game budget.
+- Fixtures and match results.
+- League table.
+- Season progression, wins/draws/losses, points and goals.
+- Local save/load using the browser's local storage.
+- New Career reset option.
+
+## 4.1 Next Career polish
+Club selection screen, player-by-player attributes, formation editor, tactics, scouting, contracts, more realistic league simulation and a multi-season calendar.
 
 ## 5. Wi-Fi multiplayer
 Local-network host/join matches. Synchronize player inputs, ball state, clock and score with an authoritative host.
