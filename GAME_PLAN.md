@@ -36,8 +36,16 @@ Club selection screen, player-by-player attributes, formation editor, tactics, s
 ## 5. Wi-Fi multiplayer
 Local-network host/join matches. Synchronize player inputs, ball state, clock and score with an authoritative host.
 
-## 6. Mobile release
-Performance settings, touch UI, Android packaging and testing on lower-end devices.
+## 6. Mobile release — BUILT
+- Mobile-first virtual joystick replaces arrow controls.
+- Action buttons moved higher for easier thumb access.
+- Touch-friendly responsive layout.
+- Lightweight low-poly human faces, hair, eyes and football boots.
+- Original lightweight crowd/audience around the stadium.
+- Mobile-friendly shadows, fog and capped pixel ratio.
+
+## 6.1 Next mobile polish
+Android APK packaging, device-specific graphics settings, pause menu, controller sensitivity settings and performance testing on lower-end phones.
 
 ## Rule
 Build one playable system at a time. Keep assets original or properly licensed and optimize for phones.
