@@ -337,7 +337,22 @@ function updatePossession(){
   }
 }
 
+function keeperSave(keeper,team){
+  if(owner)return false;
+  if(distance(keeper,ball)<1.65 && ball.userData.vel.length()>4){
+    const attackingGoal=team==='red' ? -1 : 1;
+    const dir=new THREE.Vector3(ball.position.x-keeper.position.x,0,attackingGoal);
+    releaseBall(dir,9);
+    showMessage('SAVE!',.7);
+    setStatus(team==='red'?'RED KEEPER SAVE':'BLUE KEEPER SAVE');
+    return true;
+  }
+  return false;
+}
+
 function checkCollisions(){
+  keeperSave(awayKeeper,'red');
+  keeperSave(homeKeeper,'blue');
   if(owner && owner.userData.team==='red' && distance(user,owner)<1.25){
     if(Math.random()<.035)giveBall(user);
   }
