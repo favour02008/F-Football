@@ -340,8 +340,8 @@ function updatePossession(){
 function keeperSave(keeper,team){
   if(owner)return false;
   if(distance(keeper,ball)<1.65 && ball.userData.vel.length()>4){
-    const attackingGoal=team==='red' ? -1 : 1;
-    const dir=new THREE.Vector3(ball.position.x-keeper.position.x,0,attackingGoal);
+    const clearDirection=team==='red' ? 1 : -1;
+    const dir=new THREE.Vector3(ball.position.x-keeper.position.x,0,clearDirection);
     releaseBall(dir,9);
     showMessage('SAVE!',.7);
     setStatus(team==='red'?'RED KEEPER SAVE':'BLUE KEEPER SAVE');
