@@ -16,3 +16,11 @@ button{border:1px solid #ffffff55;background:#111b;color:#fff;border-radius:14px
 .actions button{min-width:64px;min-height:54px}
 #shoot{min-width:74px;min-height:64px;border-radius:50%}
 @media(max-width:520px){#hud{font-size:12px}.brand{font-size:12px}.match{font-size:18px}.actions button{min-width:58px}}
+
+#careerMenu{position:fixed;inset:0;z-index:20;background:rgba(3,10,17,.94);display:flex;align-items:center;justify-content:center;padding:12px;color:#fff}
+.careerCard{width:min(900px,96vw);max-height:94vh;overflow:auto;background:linear-gradient(145deg,#101d2a,#071018);border:1px solid #ffffff22;border-radius:18px;padding:16px;box-shadow:0 18px 60px #000}
+.careerTitle{font-size:26px;font-weight:900;letter-spacing:1px}.careerTitle span{font-size:13px;opacity:.75;margin-left:8px}
+.careerTabs{display:flex;gap:6px;overflow:auto;margin:14px 0}.careerTabs button,.careerActions button,.careerBtn{border:1px solid #ffffff25;background:#ffffff10;color:#fff;border-radius:10px;padding:10px 12px;min-height:40px}
+.careerTabs button.active,.careerActions button:first-child{background:#1769aa}
+.careerGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.careerBox{background:#ffffff09;border:1px solid #ffffff15;border-radius:12px;padding:12px}.careerBox h3{margin:0 0 8px}.stat{display:flex;justify-content:space-between;margin:6px 0}.bar{height:7px;background:#ffffff15;border-radius:6px;overflow:hidden}.bar i{display:block;height:100%;background:#35a7ff}.fixture{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #ffffff12}.playerRow{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #ffffff12}.careerActions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.careerActions button{font-weight:900}.small{opacity:.7;font-size:12px}
+@media(max-width:600px){.careerGrid{grid-template-columns:1fr}.careerTitle{font-size:21px}}
