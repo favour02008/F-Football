@@ -118,19 +118,48 @@ ball.userData={vel:new THREE.Vector3(),spin:0};
 
 const keys={};
 const joystick={x:0,y:0,active:false};
-addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.key===' '){e.preventDefault();shoot();}});
-addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
-const joy=document.getElementById('joystick'),knob=document.getElementById('joyKnob');
-function setJoystick(e){
-  const r=joy.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
-  let x=e.clientX-cx,y=e.clientY-cy,max=r.width*.34,len=Math.hypot(x,y);
-  if(len>max){x=x/len*max;y=y/len*max;}
-  joystick.x=x/max;joystick.y=y/max;knob.style.transform='translate('+x+'px,'+y+'px)';
+const raycaster=new THREE.Raycaster();
+const touchPoint=new THREE.Vector2();
+const aimPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
+const aimTarget=new THREE.Vector3();
+let aiming=false,aimPointerId=null,aimDistance=0,aimLine;
+function makeAimGuide(){
+  const mat=new THREE.LineBasicMaterial({color:0xffff66,transparent:true,opacity:.9});
+  const geo=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3()]);
+  aimLine=new THREE.Line(geo,mat);aimLine.visible=false;scene.add(aimLine);
 }
-joy.addEventListener('pointerdown',e=>{e.preventDefault();joystick.active=true;joy.setPointerCapture(e.pointerId);setJoystick(e);});
-joy.addEventListener('pointermove',e=>{if(joystick.active)setJoystick(e);});
-function releaseJoy(){joystick.active=false;joystick.x=0;joystick.y=0;knob.style.transform='translate(0,0)';}
-joy.addEventListener('pointerup',releaseJoy);joy.addEventListener('pointercancel',releaseJoy);
+makeAimGuide();
+function screenToField(e){
+  touchPoint.x=e.clientX/innerWidth*2-1;touchPoint.y=-(e.clientY/innerHeight)*2+1;
+  raycaster.setFromCamera(touchPoint,camera);return raycaster.ray.intersectPlane(aimPlane,aimTarget);
+}
+function beginAim(e){
+  if(!running||owner!==user||aiming)return;
+  touchPoint.x=e.clientX/innerWidth*2-1;touchPoint.y=-(e.clientY/innerHeight)*2+1;
+  raycaster.setFromCamera(touchPoint,camera);
+  if(!raycaster.intersectObject(user,true).length)return;
+  e.preventDefault();aiming=true;aimPointerId=e.pointerId;aimTarget.copy(user.position);
+  aimDistance=0;aimLine.visible=true;setStatus('AIM — DRAG TO TARGET');
+}
+function updateAim(e){
+  if(!aiming||e.pointerId!==aimPointerId)return;
+  e.preventDefault();if(!screenToField(e))return;
+  aimDistance=THREE.MathUtils.clamp(user.position.distanceTo(aimTarget),0,16);
+  aimLine.geometry.setFromPoints([new THREE.Vector3(user.position.x,.38,user.position.z),new THREE.Vector3(aimTarget.x,.38,aimTarget.z)]);
+  setStatus(aimDistance<1?'DRAG FARTHER':'POWER '+Math.round(THREE.MathUtils.clamp(aimDistance*1.45,7,22))+' — RELEASE');
+}
+function finishAim(e){
+  if(!aiming||e.pointerId!==aimPointerId)return;
+  e.preventDefault();if(screenToField(e)){
+    const dx=aimTarget.x-user.position.x,dz=aimTarget.z-user.position.z,d=Math.hypot(dx,dz);
+    if(d>.65){const power=THREE.MathUtils.clamp(d*1.45,7,22);releaseBall(new THREE.Vector3(dx,0,dz),power,Math.min(.2,power*.008));setStatus(power>17?'SHOT!':'PASS');}
+  }
+  aiming=false;aimPointerId=null;aimLine.visible=false;aimDistance=0;
+}
+renderer.domElement.addEventListener('pointerdown',beginAim,{passive:false});
+renderer.domElement.addEventListener('pointermove',updateAim,{passive:false});
+renderer.domElement.addEventListener('pointerup',finishAim,{passive:false});
+renderer.domElement.addEventListener('pointercancel',e=>{if(e.pointerId===aimPointerId){aiming=false;aimPointerId=null;aimLine.visible=false;}});
 
 let blueScore=0,redScore=0,matchTime=MATCH_SECONDS,running=false,owner=user,outCooldown=.8,messageTimer=0;
 
@@ -235,8 +264,8 @@ function moveToward(p,target,dt,speed=p.userData.speed){
 function clampPlayer(p){p.position.x=THREE.MathUtils.clamp(p.position.x,-19.2,19.2);p.position.z=THREE.MathUtils.clamp(p.position.z,-32,32);}
 
 function moveControlled(dt){
-  let dx=joystick.x+(keys.d?1:0)-(keys.a?1:0),dz=joystick.y+(keys.s?1:0)-(keys.w?1:0),len=Math.hypot(dx,dz);
-  if(len){const speed=9;const nx=dx/Math.max(1,len),nz=dz/Math.max(1,len);user.position.x+=nx*speed*dt;user.position.z+=nz*speed*dt;user.rotation.y=Math.atan2(nx,nz);}
+  if(aiming)return;
+  if(owner!==user){const target=owner&&owner.userData.team==='blue'?owner.position:ball.position;moveToward(user,new THREE.Vector3(target.x,0,target.z),dt,7.2);}
   clampPlayer(user);
 }
 
@@ -338,12 +367,12 @@ function loop(now){
   requestAnimationFrame(loop);
   const dt=Math.min((now-last)/1000,.033);last=now;
   if(running){
-    matchTime=Math.max(0,matchTime-dt);if(matchTime<=0)endMatch();
+    if(!aiming)matchTime=Math.max(0,matchTime-dt);if(!aiming&&matchTime<=0)endMatch();
     if(outCooldown>0)outCooldown-=dt;
     if(messageTimer>0){messageTimer-=dt;if(messageTimer<=0)document.getElementById('message').textContent='';}
-    moveControlled(dt);updateBlueAI(dt);updateRedAI(dt);updatePossession();checkCollisions();updateBall(dt);updateHud();
+    if(!aiming){moveControlled(dt);updateBlueAI(dt);updateRedAI(dt);updatePossession();checkCollisions();updateBall(dt);updateHud();}
     const animPlayers=[user,...mates,...opponents,homeKeeper,awayKeeper];
-    for(const p of animPlayers){const moving=(p.userData.velocity?.length?.()||0)>0.15 || p===user&&(Math.abs(joystick.x)+Math.abs(joystick.y)>0.1);p.userData.anim=(p.userData.anim||0)+(moving?dt*10:dt*3);p.children.forEach((c,j)=>{if(c.geometry?.type==='BoxGeometry'&&j>=4)c.rotation.x=moving?Math.sin(p.userData.anim)*.18:0;});}
+    for(const p of animPlayers){const moving=(p.userData.velocity?.length?.()||0)>0.15 || (p===user&&!aiming&&owner!==user);p.userData.anim=(p.userData.anim||0)+(moving?dt*10:dt*3);p.children.forEach((c,j)=>{if(c.geometry?.type==='BoxGeometry'&&j>=4)c.rotation.x=moving?Math.sin(p.userData.anim)*.18:0;});}
   }
   const camTarget=new THREE.Vector3(user.position.x,11,user.position.z+15);
   camera.position.lerp(camTarget,.07);camera.lookAt(user.position.x,0,user.position.z-8);
