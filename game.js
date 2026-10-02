@@ -135,32 +135,50 @@ function screenToField(e){
 }
 function beginAim(e){
   if(!running||owner!==user||aiming)return;
-  touchPoint.x=e.clientX/innerWidth*2-1;touchPoint.y=-(e.clientY/innerHeight)*2+1;
+  e.preventDefault();
+  // Any visible part of the player carrying the ball can start aiming.
+  touchPoint.x=e.clientX/innerWidth*2-1;
+  touchPoint.y=-(e.clientY/innerHeight)*2+1;
   raycaster.setFromCamera(touchPoint,camera);
-  if(!raycaster.intersectObject(user,true).length)return;
-  e.preventDefault();aiming=true;aimPointerId=e.pointerId;aimTarget.copy(user.position);if(renderer.domElement.setPointerCapture)renderer.domElement.setPointerCapture(e.pointerId);
-  aimDistance=0;aimLine.visible=true;setStatus('AIM — DRAG TO TARGET');
+  const playerHits=raycaster.intersectObject(user,true);
+  if(!playerHits.length)return;
+  aiming=true;
+  aimPointerId=e.pointerId;
+  aimTarget.copy(user.position);
+  aimDistance=0;
+  aimLine.visible=true;
+  setStatus('AIM — DRAG TO TARGET');
+  renderer.domElement.setPointerCapture?.(e.pointerId);
 }
 function updateAim(e){
   if(!aiming||e.pointerId!==aimPointerId)return;
-  e.preventDefault();if(!screenToField(e))return;
-  aimDistance=THREE.MathUtils.clamp(user.position.distanceTo(aimTarget),0,16);
-  aimLine.geometry.setFromPoints([new THREE.Vector3(user.position.x,.38,user.position.z),new THREE.Vector3(aimTarget.x,.38,aimTarget.z)]);
-  setStatus(aimDistance<1?'DRAG FARTHER':'POWER '+Math.round(THREE.MathUtils.clamp(aimDistance*1.45,7,22))+' — RELEASE');
+  e.preventDefault();
+  if(!screenToField(e))return;
+  aimDistance=THREE.MathUtils.clamp(user.position.distanceTo(aimTarget),0,22);
+  aimLine.geometry.setFromPoints([
+    new THREE.Vector3(user.position.x,.38,user.position.z),
+    new THREE.Vector3(aimTarget.x,.38,aimTarget.z)
+  ]);
+  setStatus(aimDistance<.5?'DRAG TO AIM':'POWER '+Math.round(THREE.MathUtils.clamp(aimDistance*1.45,7,22)));
+}
+function kickFromAim(){
+  const dx=aimTarget.x-user.position.x;
+  const dz=aimTarget.z-user.position.z;
+  const d=Math.hypot(dx,dz);
+  if(d<.35){setStatus('DRAG TO AIM');return;}
+  const power=THREE.MathUtils.clamp(d*1.45,7,22);
+  releaseBall(new THREE.Vector3(dx,0,dz),power,Math.min(.2,power*.008));
+  setStatus(power>17?'SHOT!':'PASS');
 }
 function finishAim(e){
   if(!aiming||e.pointerId!==aimPointerId)return;
   e.preventDefault();
-  const dx=aimTarget.x-user.position.x,dz=aimTarget.z-user.position.z,d=Math.hypot(dx,dz);
-  if(d>.35){
-    const power=THREE.MathUtils.clamp(d*1.45,7,22);
-    releaseBall(new THREE.Vector3(dx,0,dz),power,Math.min(.2,power*.008));
-    setStatus(power>17?'SHOT!':'PASS');
-  }else{
-    setStatus('DRAG FARTHER');
-  }
-  if(renderer.domElement.releasePointerCapture&&renderer.domElement.hasPointerCapture?.(e.pointerId))renderer.domElement.releasePointerCapture(e.pointerId);
-  aiming=false;aimPointerId=null;aimLine.visible=false;aimDistance=0;
+  kickFromAim();
+  if(renderer.domElement.releasePointerCapture?.(e.pointerId)&&renderer.domElement.hasPointerCapture?.(e.pointerId))renderer.domElement.releasePointerCapture(e.pointerId);
+  aiming=false;
+  aimPointerId=null;
+  aimLine.visible=false;
+  aimDistance=0;
 }
 renderer.domElement.addEventListener('pointerdown',beginAim,{passive:false});
 renderer.domElement.addEventListener('pointermove',updateAim,{passive:false});
