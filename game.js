@@ -123,67 +123,88 @@ const touchPoint=new THREE.Vector2();
 const aimPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
 const aimTarget=new THREE.Vector3();
 let aiming=false,aimPointerId=null,aimDistance=0,aimLine;
+
 function makeAimGuide(){
-  const mat=new THREE.LineBasicMaterial({color:0xffff66,transparent:true,opacity:.9});
+  const mat=new THREE.LineBasicMaterial({color:0xffff66,transparent:true,opacity:.95});
   const geo=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3()]);
-  aimLine=new THREE.Line(geo,mat);aimLine.visible=false;scene.add(aimLine);
+  aimLine=new THREE.Line(geo,mat);
+  aimLine.visible=false;
+  scene.add(aimLine);
 }
 makeAimGuide();
+
 function screenToField(e){
-  touchPoint.x=e.clientX/innerWidth*2-1;touchPoint.y=-(e.clientY/innerHeight)*2+1;
-  raycaster.setFromCamera(touchPoint,camera);return raycaster.ray.intersectPlane(aimPlane,aimTarget);
-}
-function beginAim(e){
-  if(!running||owner!==user||aiming)return;
-  e.preventDefault();
-  // Any visible part of the player carrying the ball can start aiming.
   touchPoint.x=e.clientX/innerWidth*2-1;
   touchPoint.y=-(e.clientY/innerHeight)*2+1;
   raycaster.setFromCamera(touchPoint,camera);
-  const playerHits=raycaster.intersectObject(user,true);
-  if(!playerHits.length)return;
+  return raycaster.ray.intersectPlane(aimPlane,aimTarget);
+}
+
+function touchIsNearPlayer(e){
+  // Generous hit area around the entire player, designed for phone screens.
+  const dx=e.clientX/innerWidth*2-1;
+  const dy=-(e.clientY/innerHeight)*2+1;
+  const p=new THREE.Vector3(user.position.x,1.0,user.position.z);
+  const projected=p.clone().project(camera);
+  const px=(projected.x+1)*innerWidth/2;
+  const py=(-projected.y+1)*innerHeight/2;
+  return Math.hypot(e.clientX-px,e.clientY-py)<Math.max(75,innerWidth*.16);
+}
+
+function beginAim(e){
+  if(!running||owner!==user||aiming)return;
+  if(!touchIsNearPlayer(e))return;
+  e.preventDefault();
   aiming=true;
   aimPointerId=e.pointerId;
   aimTarget.copy(user.position);
   aimDistance=0;
   aimLine.visible=true;
   setStatus('AIM — DRAG TO TARGET');
-  renderer.domElement.setPointerCapture?.(e.pointerId);
+  try{renderer.domElement.setPointerCapture(e.pointerId)}catch(_){}
 }
+
 function updateAim(e){
   if(!aiming||e.pointerId!==aimPointerId)return;
   e.preventDefault();
   if(!screenToField(e))return;
-  aimDistance=THREE.MathUtils.clamp(user.position.distanceTo(aimTarget),0,22);
+  aimDistance=THREE.MathUtils.clamp(user.position.distanceTo(aimTarget),0,24);
   aimLine.geometry.setFromPoints([
     new THREE.Vector3(user.position.x,.38,user.position.z),
     new THREE.Vector3(aimTarget.x,.38,aimTarget.z)
   ]);
-  setStatus(aimDistance<.5?'DRAG TO AIM':'POWER '+Math.round(THREE.MathUtils.clamp(aimDistance*1.45,7,22)));
+  setStatus(aimDistance<.5?'DRAG TO AIM':'POWER '+Math.round(THREE.MathUtils.clamp(aimDistance*1.45,7,24)));
 }
+
 function kickFromAim(){
   const dx=aimTarget.x-user.position.x;
   const dz=aimTarget.z-user.position.z;
   const d=Math.hypot(dx,dz);
-  if(d<.35){setStatus('DRAG TO AIM');return;}
-  const power=THREE.MathUtils.clamp(d*1.45,7,22);
+  if(d<.5){
+    setStatus('DRAG FARTHER');
+    return;
+  }
+  const power=THREE.MathUtils.clamp(d*1.45,7,24);
   releaseBall(new THREE.Vector3(dx,0,dz),power,Math.min(.2,power*.008));
   setStatus(power>17?'SHOT!':'PASS');
 }
+
 function finishAim(e){
   if(!aiming||e.pointerId!==aimPointerId)return;
   e.preventDefault();
   kickFromAim();
-  if(renderer.domElement.releasePointerCapture?.(e.pointerId)&&renderer.domElement.hasPointerCapture?.(e.pointerId))renderer.domElement.releasePointerCapture(e.pointerId);
+  try{renderer.domElement.releasePointerCapture(e.pointerId)}catch(_){}
   aiming=false;
   aimPointerId=null;
   aimLine.visible=false;
   aimDistance=0;
 }
+
+renderer.domElement.style.touchAction='none';
 renderer.domElement.addEventListener('pointerdown',beginAim,{passive:false});
 renderer.domElement.addEventListener('pointermove',updateAim,{passive:false});
 renderer.domElement.addEventListener('pointerup',finishAim,{passive:false});
-renderer.domElement.addEventListener('pointercancel',e=>{if(e.pointerId===aimPointerId){if(renderer.domElement.releasePointerCapture&&renderer.domElement.hasPointerCapture?.(e.pointerId))renderer.domElement.releasePointerCapture(e.pointerId);aiming=false;aimPointerId=null;aimLine.visible=false;aimDistance=0;setStatus('AIM CANCELLED');}});
+renderer.domElement.addEventListener('pointercancel',finishAim,{passive:false});
 
 let blueScore=0,redScore=0,matchTime=MATCH_SECONDS,running=false,owner=user,outCooldown=.8,messageTimer=0;
 
