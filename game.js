@@ -236,7 +236,7 @@ function tackle(){
   if(owner&&owner.userData.team==='red'&&dist(user,owner)<2.3){giveBall(user);showMessage('TACKLE!',.6);}
   else if(!owner&&dist(user,ball)<2.0)giveBall(user);else setStatus('TOO FAR');
 }
-document.getElementById('pass').onclick=pass;document.getElementById('shoot').onclick=shoot;document.getElementById('tackle').onclick=tackle;
+// Touch controls are handled by the Score! Hero-style tap-and-drag system above.
 
 function resetKickoff(){
   user.position.set(0,0,19);
