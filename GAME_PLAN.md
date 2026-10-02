@@ -3,8 +3,11 @@
 ## 1. Core 3D
 Pitch, controllable player, ball, camera, touch controls.
 
-## 2. Football gameplay
-Possession, passing, shooting, goalkeeper, tackles, fouls, match clock and score.
+## 2. Football gameplay — BUILT
+Possession, passing, shooting, goalkeeper saves, tackles, match clock, score, goals and out-of-bounds resets are implemented in the browser prototype.
+
+## 2.1 Next polish
+Improve animations, team positioning, fouls/free kicks and more realistic goalkeeper/defender behavior.
 
 ## 3. Full 11v11
 Role-based AI for goalkeeper, defenders, midfielders and forwards. Team shape, marking, pressing and support runs.
