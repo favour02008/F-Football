@@ -97,7 +97,51 @@ addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
 function bind(id,key){const b=document.getElementById(id);b.onpointerdown=e=>{e.preventDefault();keys[key]=true};b.onpointerup=()=>keys[key]=false;b.onpointercancel=()=>keys[key]=false;b.onpointerleave=()=>keys[key]=false;}
 bind('up','w');bind('down','s');bind('left','a');bind('right','d');
 
-let blueScore=0,redScore=0,matchTime=MATCH_SECONDS,running=true,owner=user,outCooldown=.8,messageTimer=0;
+let blueScore=0,redScore=0,matchTime=MATCH_SECONDS,running=false,owner=user,outCooldown=.8,messageTimer=0;
+
+const careerKey='f-football-career-v1';
+const clubs=['Bolga United','Accra City','Kumasi Stars','Tamale FC','Cape Coast FC','Ho Rangers'];
+const careerDefault={club:'Bolga United',season:1,week:1,money:250000,points:0,wins:0,draws:0,losses:0,goals:0,training:0,rating:68,energy:100,transfers:[],fixtures:[],tab:'dashboard'};
+let career=loadCareer();
+function loadCareer(){try{return {...careerDefault,...JSON.parse(localStorage.getItem(careerKey)||'null')}}catch(e){return {...careerDefault}}}
+function saveCareer(){localStorage.setItem(careerKey,JSON.stringify(career));showMessage('CAREER SAVED',1);renderCareer();}
+function newCareer(){if(confirm('Start a new career?')){career={...careerDefault};saveCareer();}}
+function nextOpponent(){return clubs[(clubs.indexOf(career.club)+career.week)%clubs.length]||'Accra City';}
+function ensureFixtures(){
+  if(career.fixtures.length)return;
+  for(let i=1;i<=10;i++)career.fixtures.push({week:i,home:i%2===0?career.club:clubs[(clubs.indexOf(career.club)+i)%clubs.length],away:i%2===0?clubs[(clubs.indexOf(career.club)+i)%clubs.length]:career.club,played:false,result:''});
+}
+function bar(label,val){return '<div class="stat"><span>'+label+'</span><b>'+Math.round(val)+'</b></div><div class="bar"><i style="width:'+Math.min(100,val)+'%"></i></div>';}
+function renderCareer(){
+  ensureFixtures();
+  const c=document.getElementById('careerContent'); if(!c)return;
+  let h='';
+  if(career.tab==='dashboard')h='<div class="careerGrid"><div class="careerBox"><h3>'+career.club+'</h3><div class="small">Season '+career.season+' • Week '+career.week+'</div>'+bar('Squad rating',career.rating)+bar('Energy',career.energy)+'<p>Budget: GH₵ '+career.money.toLocaleString()+'</p></div><div class="careerBox"><h3>Season Record</h3><p>Wins: '+career.wins+' &nbsp; Draws: '+career.draws+' &nbsp; Losses: '+career.losses+'</p><p>Points: <b>'+career.points+'</b> • Goals: '+career.goals+'</p></div><div class="careerBox"><h3>Next Fixture</h3><p><b>'+career.club+' vs '+nextOpponent()+'</b></p><p class="small">Week '+career.week+' • 3-minute match</p></div><div class="careerBox"><h3>Career</h3><p>Train your squad, manage energy, sign players and climb the table.</p></div></div>';
+  if(career.tab==='training')h='<div class="careerGrid"><div class="careerBox"><h3>Training Ground</h3><p>Each session improves squad rating but uses energy.</p><button class="careerBtn" id="trainBtn">TRAIN SQUAD</button><p>Training sessions: '+career.training+'</p></div><div class="careerBox"><h3>Squad Development</h3>'+bar('Rating',career.rating)+bar('Energy',career.energy)+'<p class="small">Rest is automatic after matches.</p></div></div>';
+  if(career.tab==='transfers'){const market=[['Kwame Mensah','Forward',74,85000],['Yaw Boateng','Midfielder',72,70000],['Kojo Asare','Defender',70,60000],['Abdul Karim','Keeper',73,78000]];h='<div class="careerBox"><h3>Transfer Market</h3><p class="small">Budget: GH₵ '+career.money.toLocaleString()+'</p>'+market.map((p,i)=>'<div class="playerRow"><span>'+p[0]+' • '+p[1]+' • OVR '+p[2]+'</span><button class="careerBtn" data-buy="'+i+'">GH₵ '+p[3].toLocaleString()+'</button></div>').join('')+'</div>';career._market=market;}
+  if(career.tab==='fixtures')h='<div class="careerBox"><h3>Fixtures</h3>'+career.fixtures.map(f=>'<div class="fixture"><span>W'+f.week+' • '+f.home+' vs '+f.away+'</span><b>'+ (f.played?f.result:'UPCOMING')+'</b></div>').join('')+'</div>';
+  if(career.tab==='table'){const rows=clubs.map((x,i)=>({club:x,pts:x===career.club?career.points:Math.max(0,12-i*2)})).sort((a,b)=>b.pts-a.pts);h='<div class="careerBox"><h3>League Table</h3>'+rows.map((x,i)=>'<div class="fixture"><span>'+ (i+1)+'. '+x.club+'</span><b>'+x.pts+' pts</b></div>').join('')+'</div>';}
+  c.innerHTML=h;
+  document.querySelectorAll('#careerTabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===career.tab));
+  document.getElementById('trainBtn')?.addEventListener('click',()=>{if(career.energy<15){showMessage('NOT ENOUGH ENERGY',1);return;}career.energy-=15;career.rating=Math.min(95,career.rating+1);career.training++;saveCareer();});
+  document.querySelectorAll('[data-buy]').forEach(b=>b.addEventListener('click',()=>{const p=career._market[Number(b.dataset.buy)];if(career.money<p[3]){showMessage('NOT ENOUGH MONEY',1);return;}career.money-=p[3];career.rating=Math.min(95,career.rating+1);career.transfers.push(p[0]);saveCareer();showMessage(p[0]+' SIGNED',1);}));
+}
+document.querySelectorAll('#careerTabs button').forEach(b=>b.onclick=()=>{career.tab=b.dataset.tab;renderCareer();});
+document.getElementById('careerSave').onclick=saveCareer;
+document.getElementById('careerReset').onclick=newCareer;
+document.getElementById('careerMatch').onclick=()=>{
+  ensureFixtures(); document.getElementById('careerMenu').style.display='none'; running=true; matchTime=MATCH_SECONDS; blueScore=0; redScore=0; resetKickoff(); showMessage('MATCHDAY',1);
+};
+function finishCareerMatch(){
+  const f=career.fixtures.find(x=>x.week===career.week&&!x.played);
+  if(f){f.played=true;f.result=blueScore>redScore?'W':blueScore<redScore?'L':'D';}
+  if(blueScore>redScore){career.wins++;career.points+=3;career.goals+=blueScore;}
+  else if(blueScore<redScore){career.losses++;career.goals+=blueScore;}
+  else{career.draws++;career.points++;career.goals+=blueScore;}
+  career.energy=Math.min(100,career.energy+20);career.week++;career.money+=blueScore*5000;career.tab='dashboard';saveCareer();
+  document.getElementById('careerMenu').style.display='flex';running=false;renderCareer();
+}
+ensureFixtures();renderCareer();
 
 function setStatus(t){document.getElementById('status').textContent=t;}
 function updateHud(){document.getElementById('score').textContent=blueScore+' - '+redScore;const t=Math.max(0,Math.ceil(matchTime));document.getElementById('timer').textContent=String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0');}
@@ -252,7 +296,7 @@ function updateBall(dt){
   if(Math.abs(ball.position.x)>HALF_W||Math.abs(ball.position.z)>HALF_L){if(outCooldown<=0)resetOut();}
 }
 
-function endMatch(){running=false;owner=null;setStatus('FULL TIME');showMessage('FULL TIME  '+blueScore+' - '+redScore,999);}
+function endMatch(){running=false;owner=null;setStatus('FULL TIME');showMessage('FULL TIME  '+blueScore+' - '+redScore,2.5);setTimeout(()=>finishCareerMatch(),2600);}
 
 let last=performance.now();
 function loop(now){
