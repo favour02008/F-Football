@@ -4,13 +4,21 @@
 Pitch, controllable player, ball, camera, touch controls.
 
 ## 2. Football gameplay — BUILT
-Possession, passing, shooting, goalkeeper saves, tackles, match clock, score, goals and out-of-bounds resets are implemented in the browser prototype.
+Possession, passing, shooting, goalkeeper saves, tackles, match clock, score, goals and out-of-bounds resets.
 
-## 2.1 Next polish
-Improve animations, team positioning, fouls/free kicks and more realistic goalkeeper/defender behavior.
+## 3. Realistic 11v11 — BUILT
+- Full 11 players per team: goalkeeper, 4 defenders, 4 midfielders and 2 forwards.
+- More detailed original 3D footballer models with heads, bodies, legs and player marker.
+- Role-based AI positioning for defenders, midfielders and forwards.
+- Ball chasing, marking, pressing and support movement.
+- Player acceleration, turning and movement smoothing.
+- Stadium stands, lighting, shadows and atmospheric fog.
+- Ball gravity, bounce, drag and spin.
+- Improved goalkeeper movement and saves.
+- More natural attacking movement and red-team shooting.
 
-## 3. Full 11v11
-Role-based AI for goalkeeper, defenders, midfielders and forwards. Team shape, marking, pressing and support runs.
+## 3.1 Next realism pass
+Animation cycles, better dribbling/kicking animations, fouls and free kicks, corners, goal kicks, substitutions and improved goalkeeper diving.
 
 ## 4. Career Mode
 Club selection, player attributes, training, transfers, fixtures, league table, progression and save/load.
@@ -22,4 +30,4 @@ Local-network host/join matches. Synchronize player inputs, ball state, clock an
 Performance settings, touch UI, Android packaging and testing on lower-end devices.
 
 ## Rule
-Build one playable system at a time. Do not attempt all 22 players, animations and networking in the first milestone.
+Build one playable system at a time. Keep assets original or properly licensed and optimize for phones.
