@@ -14,3 +14,6 @@ Mobile-first 3D football game project.
 6. Android optimization and release
 
 The first prototype is browser-playable and intentionally lightweight.
+
+## Current build
+Milestone 2 is now implemented: possession, passing, shooting, goals, goalkeeper saves, tackles, match score, match timer and out-of-bounds resets.
