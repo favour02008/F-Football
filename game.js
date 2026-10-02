@@ -138,7 +138,7 @@ function beginAim(e){
   touchPoint.x=e.clientX/innerWidth*2-1;touchPoint.y=-(e.clientY/innerHeight)*2+1;
   raycaster.setFromCamera(touchPoint,camera);
   if(!raycaster.intersectObject(user,true).length)return;
-  e.preventDefault();aiming=true;aimPointerId=e.pointerId;aimTarget.copy(user.position);
+  e.preventDefault();aiming=true;aimPointerId=e.pointerId;aimTarget.copy(user.position);if(renderer.domElement.setPointerCapture)renderer.domElement.setPointerCapture(e.pointerId);
   aimDistance=0;aimLine.visible=true;setStatus('AIM — DRAG TO TARGET');
 }
 function updateAim(e){
@@ -154,12 +154,12 @@ function finishAim(e){
     const dx=aimTarget.x-user.position.x,dz=aimTarget.z-user.position.z,d=Math.hypot(dx,dz);
     if(d>.65){const power=THREE.MathUtils.clamp(d*1.45,7,22);releaseBall(new THREE.Vector3(dx,0,dz),power,Math.min(.2,power*.008));setStatus(power>17?'SHOT!':'PASS');}
   }
-  aiming=false;aimPointerId=null;aimLine.visible=false;aimDistance=0;
+  if(renderer.domElement.releasePointerCapture&&renderer.domElement.hasPointerCapture?.(e.pointerId))renderer.domElement.releasePointerCapture(e.pointerId);aiming=false;aimPointerId=null;aimLine.visible=false;aimDistance=0;
 }
 renderer.domElement.addEventListener('pointerdown',beginAim,{passive:false});
 renderer.domElement.addEventListener('pointermove',updateAim,{passive:false});
 renderer.domElement.addEventListener('pointerup',finishAim,{passive:false});
-renderer.domElement.addEventListener('pointercancel',e=>{if(e.pointerId===aimPointerId){aiming=false;aimPointerId=null;aimLine.visible=false;}});
+renderer.domElement.addEventListener('pointercancel',e=>{if(e.pointerId===aimPointerId){if(renderer.domElement.releasePointerCapture&&renderer.domElement.hasPointerCapture?.(e.pointerId))renderer.domElement.releasePointerCapture(e.pointerId);aiming=false;aimPointerId=null;aimLine.visible=false;aimDistance=0;setStatus('AIM CANCELLED');}});
 
 let blueScore=0,redScore=0,matchTime=MATCH_SECONDS,running=false,owner=user,outCooldown=.8,messageTimer=0;
 
